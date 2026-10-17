@@ -920,6 +920,8 @@ static int doreplace(BW *bw, SRCH *srch)
 	P *q;
 	off_t markb_xcol = 0;
 	off_t markk_xcol = 0;
+	off_t markb_line = 0;
+	off_t markk_line = 0;
 
 	int x;
 	B *pieces[NMATCHES];
@@ -935,10 +937,14 @@ static int doreplace(BW *bw, SRCH *srch)
 	 * its endpoints.  Keep those columns fixed while the replacement changes
 	 * the contents of a line. */
 	if (square) {
-		if (srch->markb)
+		if (srch->markb) {
 			markb_xcol = srch->markb->xcol;
-		if (srch->markk)
+			markb_line = srch->markb->line;
+		}
+		if (srch->markk) {
 			markk_xcol = srch->markk->xcol;
+			markk_line = srch->markk->line;
+		}
 	}
 
 	/* Copy matched strings before we delete */
@@ -976,10 +982,16 @@ static int doreplace(BW *bw, SRCH *srch)
 	}
 	insert(srch, bw->cursor, sv(srch->replacement), &entire, pieces);
 	if (square) {
-		if (srch->markb)
+		if (srch->markb) {
+			pline(srch->markb, markb_line);
+			pcol(srch->markb, markb_xcol);
 			srch->markb->xcol = markb_xcol;
-		if (srch->markk)
+		}
+		if (srch->markk) {
+			pline(srch->markk, markk_line);
+			pcol(srch->markk, markk_xcol);
 			srch->markk->xcol = markk_xcol;
+		}
 	}
 
 	/* Delete copies */
