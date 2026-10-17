@@ -2,6 +2,26 @@
 import joefx
 
 class FindTests(joefx.JoeTestBase):
+    def test_debug_rectangle_issue(self):
+        """Regression test for rectangle search column cache across rows."""
+        self.workdir.fixtureData("test", "row 1: i inside i outside\nrow 2: i another i outside\nrow 3: i third i outside\nrow 4: i final i outside\nrow 5: i outside-only\n")
+        self.startup.args = ("test",)
+        self.startJoe()
+        self.mode("square")
+        self.cmd("bof")
+        self.writectl("{right*7}")
+        self.cmd("markb")
+        self.writectl("{down*3}{right*8}")
+        self.cmd("markk")
+        self.cmd("tomarkb")
+        self.replace("i", "I", "k")
+        self.answerReplace("y")
+        self.write("!")
+        self.writectl("^C")
+        self.save()
+        self.exitJoe()
+        self.assertFileContents("test", "row 1: I InsIde i outside\nrow 2: I another i outside\nrow 3: I thIrd i outside\nrow 4: I fInal i outside\nrow 5: i outside-only\n")
+
     def test_abracadabra(self):
         """Regression test for #295: infinite loop on search-and-replace"""
         self.startJoe()

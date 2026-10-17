@@ -930,10 +930,6 @@ static int doreplace(BW *bw, SRCH *srch)
 {
 	P *from, *to;
 	P *q;
-	off_t markb_xcol = 0;
-	off_t markk_xcol = 0;
-	off_t markb_line = 0;
-	off_t markk_line = 0;
 
 	int x;
 	B *pieces[NMATCHES];
@@ -945,15 +941,6 @@ static int doreplace(BW *bw, SRCH *srch)
 		markk->end = 1;
 	if (srch->markk)
 		srch->markk->end = 1;
-	/* A rectangle is defined by screen columns, not by the byte offsets of
-	 * its endpoints.  Keep those columns fixed while the replacement changes
-	 * the contents of a line. */
-	if (square) {
-		markb_xcol = srch->markb_xcol;
-		markb_line = srch->markb_line;
-		markk_xcol = srch->markk_xcol;
-		markk_line = srch->markk_line;
-	}
 
 	/* Copy matched strings before we delete */
 	from = pdup(bw->cursor, "doreplace:from");
@@ -989,18 +976,6 @@ static int doreplace(BW *bw, SRCH *srch)
 		prm(q);
 	}
 	insert(srch, bw->cursor, sv(srch->replacement), &entire, pieces);
-	if (square) {
-		if (srch->markb) {
-			pline(srch->markb, markb_line);
-			pcol(srch->markb, markb_xcol);
-			srch->markb->xcol = markb_xcol;
-		}
-		if (srch->markk) {
-			pline(srch->markk, markk_line);
-			pcol(srch->markk, markk_xcol);
-			srch->markk->xcol = markk_xcol;
-		}
-	}
 
 	/* Delete copies */
 	for (x = 0; x != NMATCHES; ++x)
@@ -1103,6 +1078,10 @@ static int restrict_to_block(BW *bw, SRCH *srch)
 {
 	if (!srch->valid || !srch->block_restrict)
 		return 0;
+	/* Search can move a point across a newline without refreshing its cached
+	 * visual column.  Rectangle limits use screen columns, so force the
+	 * current point's column to be recalculated before checking the bounds. */
+	bw->cursor->valcol = 0;
 	bw->cursor->xcol = piscol(bw->cursor);
 	if (srch->backwards)
 		if (!square) {
