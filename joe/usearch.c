@@ -397,11 +397,19 @@ static SRCH *setmark(SRCH *srch)
 	srch->markb = markb;
 	if (srch->markb)
 		srch->markb->owner = &srch->markb;
+	if (srch->markb) {
+		srch->markb_line = srch->markb->line;
+		srch->markb_xcol = srch->markb->xcol;
+	}
 	markb = NULL;
 
 	srch->markk = markk;
 	if (srch->markk)
 		srch->markk->owner = &srch->markk;
+	if (srch->markk) {
+		srch->markk_line = srch->markk->line;
+		srch->markk_xcol = srch->markk->xcol;
+	}
 	markk = NULL;
 
 	return srch;
@@ -430,6 +438,10 @@ SRCH *mksrch(char *pattern, char *replacement, int ignore, int backwards, int re
 	srch->last_repl = -1;
 	srch->markb = NULL;
 	srch->markk = NULL;
+	srch->markb_line = 0;
+	srch->markb_xcol = 0;
+	srch->markk_line = 0;
+	srch->markk_xcol = 0;
 	srch->wrap_p = NULL;
 	srch->allow_wrap = wrap;
 	srch->wrap_flag = 0;
@@ -937,14 +949,10 @@ static int doreplace(BW *bw, SRCH *srch)
 	 * its endpoints.  Keep those columns fixed while the replacement changes
 	 * the contents of a line. */
 	if (square) {
-		if (srch->markb) {
-			markb_xcol = srch->markb->xcol;
-			markb_line = srch->markb->line;
-		}
-		if (srch->markk) {
-			markk_xcol = srch->markk->xcol;
-			markk_line = srch->markk->line;
-		}
+		markb_xcol = srch->markb_xcol;
+		markb_line = srch->markb_line;
+		markk_xcol = srch->markk_xcol;
+		markk_line = srch->markk_line;
 	}
 
 	/* Copy matched strings before we delete */
@@ -1115,11 +1123,11 @@ static int restrict_to_block(BW *bw, SRCH *srch)
 		else if (bw->cursor->byte - (srch->entire.rm_eo - srch->entire.rm_so) < srch->markb->byte)
 			return -1;
 	} else {
-		if (bw->cursor->line > srch->markk->line)
+		if (bw->cursor->line > srch->markk_line)
 			return 1;
-		if (bw->cursor->line < srch->markb->line)
+		if (bw->cursor->line < srch->markb_line)
 			return -1;
-		if (piscol(bw->cursor) > srch->markk->xcol || piscol(bw->cursor) - (srch->entire.rm_eo - srch->entire.rm_so) < srch->markb->xcol)
+		if (piscol(bw->cursor) > srch->markk_xcol || piscol(bw->cursor) - (srch->entire.rm_eo - srch->entire.rm_so) < srch->markb_xcol)
 			return -1;
 	}
 	return 0;
