@@ -918,6 +918,8 @@ static int doreplace(BW *bw, SRCH *srch)
 {
 	P *from, *to;
 	P *q;
+	off_t markb_xcol = 0;
+	off_t markk_xcol = 0;
 
 	int x;
 	B *pieces[NMATCHES];
@@ -929,6 +931,15 @@ static int doreplace(BW *bw, SRCH *srch)
 		markk->end = 1;
 	if (srch->markk)
 		srch->markk->end = 1;
+	/* A rectangle is defined by screen columns, not by the byte offsets of
+	 * its endpoints.  Keep those columns fixed while the replacement changes
+	 * the contents of a line. */
+	if (square) {
+		if (srch->markb)
+			markb_xcol = srch->markb->xcol;
+		if (srch->markk)
+			markk_xcol = srch->markk->xcol;
+	}
 
 	/* Copy matched strings before we delete */
 	from = pdup(bw->cursor, "doreplace:from");
@@ -964,6 +975,12 @@ static int doreplace(BW *bw, SRCH *srch)
 		prm(q);
 	}
 	insert(srch, bw->cursor, sv(srch->replacement), &entire, pieces);
+	if (square) {
+		if (srch->markb)
+			srch->markb->xcol = markb_xcol;
+		if (srch->markk)
+			srch->markk->xcol = markk_xcol;
+	}
 
 	/* Delete copies */
 	for (x = 0; x != NMATCHES; ++x)
